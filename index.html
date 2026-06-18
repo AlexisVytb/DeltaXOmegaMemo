@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dépôt Delta X Omega</title>
+    <style>
+        :root {
+            --bg-dark: #21212E;
+            --bg-light: #EBF2FA;
+            --color-delta: #F6C004;
+            --color-omega: #828294;
+            --card-bg: #2d2d3f;
+            --text-light: #EBF2FA;
+            --text-muted: #a0a0b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            border-bottom: 2px solid var(--color-omega);
+            padding-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+        }
+
+        .brand-delta { color: var(--color-delta); }
+        .brand-x { color: var(--text-light); font-size: 1.8rem; margin: 0 0.5rem; }
+        .brand-omega { color: var(--color-omega); }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-bar {
+            flex: 1;
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            border: 1px solid var(--color-omega);
+            background-color: #1a1a26;
+            color: var(--text-light);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-bar:focus {
+            border-color: var(--color-delta);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+            border-color: var(--color-delta);
+        }
+
+        .preview-container {
+            width: 100%;
+            height: 180px;
+            background-color: #1a1a26;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .preview-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-icon {
+            font-size: 3rem;
+            color: var(--color-omega);
+        }
+
+        .card-info {
+            padding: 1.2rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            background-color: var(--color-omega);
+            color: var(--bg-dark);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .tag.image { background-color: var(--color-delta); }
+
+        .btn-download {
+            display: inline-block;
+            width: 100%;
+            text-align: center;
+            background-color: transparent;
+            color: var(--text-light);
+            border: 1px solid var(--color-omega);
+            padding: 0.6rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-download:hover {
+            background-color: var(--text-light);
+            color: var(--bg-dark);
+            border-color: var(--text-light);
+        }
+
+        .status-message {
+            text-align: center;
+            grid-column: 1 / -1;
+            padding: 3rem;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1><span class="brand-delta">DELTA</span><span class="brand-x">X</span><span class="brand-omega">OMEGA</span></h1>
+            <p>Dépôt automatique d'archives, images et documents</p>
+        </header>
+
+        <div class="controls">
+            <input type="text" id="searchInput" class="search-bar" placeholder="Rechercher un fichier par son nom...">
+        </div>
+
+        <div class="grid" id="repoGrid">
+            <div class="status-message">Chargement des fichiers depuis GitHub...</div>
+        </div>
+    </div>
+
+    <script>
+        const GITHUB_USERNAME = "AlexisVytb";
+        const REPO_NAME = "DeltaXOmegaMemo";
+        const FOLDER_NAME = "assets";
+
+        const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
+        let allFiles = [];
+        const grid = document.getElementById('repoGrid');
+        const searchInput = document.getElementById('searchInput');
+
+        async function fetchGithubFiles() {
+            const apiUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${FOLDER_NAME}`;
+            
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error("Impossible de récupérer les fichiers.");
+                
+                const data = await response.json();
+                
+                allFiles = data.filter(item => item.type === 'file').map(file => {
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const isImg = imageExtensions.includes(ext);
+                    
+                    return {
+                        name: file.name,
+                        url: file.download_url,
+                        type: isImg ? 'image' : 'document'
+                    };
+                });
+
+                displayItems(allFiles);
+            } catch (error) {
+                grid.innerHTML = `<div class="status-message" style="color: #ff4a4a;">Erreur : Vérifie le nom du dossier ou que ton dépôt est bien public.</div>`;
+                console.error(error);
+            }
+        }
+
+        function displayItems(items) {
+            grid.innerHTML = "";
+            
+            if (items.length === 0) {
+                grid.innerHTML = '<div class="status-message">Aucun fichier trouvé dans le dossier.</div>';
+                return;
+            }
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                let previewHTML = '';
+                if (item.type === 'image') {
+                    previewHTML = `<img src="${item.url}" alt="${item.name}" class="preview-img" loading="lazy">`;
+                } else {
+                    previewHTML = `<div class="preview-icon">📄</div>`;
+                }
+
+                card.innerHTML = `
+                    <div class="preview-container">${previewHTML}</div>
+                    <div class="card-info">
+                        <div class="card-title" title="${item.name}">${item.name}</div>
+                        <div class="card-meta">
+                            <span class="tag ${item.type}">${item.type}</span>
+                        </div>
+                        <a href="${item.url}" target="_blank" download="${item.name}" class="btn-download">Ouvrir / Télécharger</a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const searchText = e.target.value.toLowerCase();
+            const filteredItems = allFiles.filter(item => 
+                item.name.toLowerCase().includes(searchText)
+            );
+            displayItems(filteredItems);
+        });
+
+        fetchGithubFiles();
+    </script>
+</body>
+</html>
